@@ -3,6 +3,8 @@ import sys
 import json
 import requests
 
+import purl
+
 if sys.version_info.major == 3:
     import urllib.parse as urlparse
 else:
@@ -53,7 +55,6 @@ def detect_backend(url):
     :return: Returns recognized VideoBackend
     :rtype: VideoBackend
     """
-
     for backend_name in EMBED_VIDEO_BACKENDS:
         backend = import_by_path(backend_name)
         if backend.is_valid(url):
@@ -366,6 +367,40 @@ class VimeoBackend(VideoBackend):
 
     def get_thumbnail_url(self):
         return self.info.get('thumbnail_large')
+
+
+class RutubeBackend(VideoBackend):
+    """
+    Backend for Rutube URLs.
+    """
+    re_detect = re.compile(
+        r'^((http(s)?:)?//)?(www\.)?rutube\.ru/video/.*', re.I
+    )
+    pattern_info = 'http://rutube.ru/api/oembed/?url={code}&format=json'
+    re_url = re.compile(r'src="(?P<url>.*?)"', re.I)
+
+    def get_info(self):
+        try:
+            response = requests.get(
+                self.pattern_info.format(code=self._url),
+            )
+            if response.status_code != 200:
+                raise VideoDoesntExistException()
+            return json.loads(response.text)
+        except ValueError:
+            raise VideoDoesntExistException()
+
+    def get_url(self):
+        match = self.re_url.search(self.info.get('html'))
+        return match.group('url')
+
+    def get_thumbnail_url(self):
+        return self.info.get('thumbnail_url')
+
+    def get_embed_code(self, width, height):
+        """ Return code of player from rutube API
+        """
+        return super(RutubeBackend, self).get_embed_code(width, height)
 
 
 class SoundCloudBackend(VideoBackend):
