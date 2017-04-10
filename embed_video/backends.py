@@ -376,6 +376,7 @@ class RutubeBackend(VideoBackend):
     re_detect = re.compile(
         r'^((http(s)?:)?//)?(www\.)?rutube\.ru/video/.*', re.I
     )
+    re_code = re.compile(r'rutube.ru/video/(?P<code>[\w\d]+)', re.I | re.X)
     pattern_info = 'http://rutube.ru/api/oembed/?url={code}&format=json'
     re_url = re.compile(r'src="(?P<url>.*?)"', re.I)
 
